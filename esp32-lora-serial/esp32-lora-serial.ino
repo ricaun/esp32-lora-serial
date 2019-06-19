@@ -1,5 +1,5 @@
 //----------------------------------------//
-//  ESP32_lora_serial.ino
+//  esp32-lora-serial.ino
 //
 //  created 17/06/2019
 //  by Luiz Henrique Cassettari
