@@ -4,6 +4,9 @@
 //  created 23/06/2018
 //  by Luiz Henrique Cassettari
 //----------------------------------------//
+//  update 28/06/2019
+//  add timeout strings
+//----------------------------------------//
 
 #include <Wire.h>
 #include "SSD1306.h"
@@ -21,6 +24,7 @@ SSD1306 display(OLED_ADDR, OLED_SDA, OLED_SCL);// i2c ADDR & SDA, SCL on wemos
 static String oled_status_string;
 static int oled_status_timeout;
 static String oled_strings;
+static int oled_strings_timeout;
 
 void oled_display(String s) {
   display.clear();
@@ -50,12 +54,35 @@ boolean oled_loop() {
     display.setTextAlignment(TEXT_ALIGN_CENTER);
     String str = "";
     str += timeOn(0);
+    str += " - ";
+    str += timeOn(loraMillis);
+    
+      
     str += "\n";
+    
+    str += send_name;
+    str += " | ";
+    str +=(send_mode ? "TX" : "RX");
+    str += "\n";
+
+    str += frequency;
+    str += " | ";
+    str += spreadingFactor;
+    str += " | ";
+    str += signalBandwidth;
+    str += "\n";
+    
     str += oled_strings;
     str += "\n";
     str += oled_status_string;
     display.drawString(64,0,str);
     display.display();
+
+    if (--oled_strings_timeout == 0)
+    {
+      oled_strings_timeout = 0;
+      oled_strings = "";
+    }
 
     if (--oled_status_timeout == 0)
     {
@@ -75,6 +102,7 @@ void oled_status(String status) {
 
 void oled_string(String status) {
   oled_strings = status;
+  oled_strings_timeout = OLED_TIMEOUT * 60;
 }
 
 boolean oled_runEvery(unsigned long interval)
@@ -92,7 +120,7 @@ boolean oled_runEvery(unsigned long interval)
 String timeOn(unsigned long diff)
 {
     String str = "";
-    unsigned long t = millis() / 1000;
+    unsigned long t = (millis() - diff) / 1000;
     int s = t % 60;
     int m = (t / 60) % 60;
     int h = (t / 3600);

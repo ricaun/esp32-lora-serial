@@ -4,14 +4,19 @@
 //  created 17/06/2019
 //  by Luiz Henrique Cassettari
 //----------------------------------------//
+//  update 28/06/2019
+//  add millis to count last send / receive
+//----------------------------------------//
 
 #include <SPI.h>
 #include <LoRa.h>
 
 #define SEND_BUFFER_MAX 250
-#define SERIAL_RX_BUFFER 1024
+#define SERIAL_RX_BUFFER 2056
 #define OLED_CHAR '#'
 #define OLED_SEND_TIME 60000
+
+static unsigned long loraMillis;
 
 void lora_setup() {
   LoRa.setPins(csPin, resetPin, irqPin);
@@ -28,19 +33,20 @@ void lora_setup() {
   Serial.println();
   Serial.println();
   Serial.setRxBufferSize(SERIAL_RX_BUFFER);
+  LoRa.setFrequency(frequency);
   LoRa.setSpreadingFactor(spreadingFactor);
   LoRa.setSignalBandwidth(signalBandwidth);
   delay(1000);
-  if (send_mode == true){
+  if (send_mode){
     LoRa_txMode();
-    oled_status("TX MODE");
-    oled_string(send_name);
+    //oled_status("TX MODE");
+    //oled_string(send_name);
   }
   else
   {
     LoRa.onReceive(onReceive);
     LoRa_rxMode();
-    oled_status("RX MODE");
+    //oled_status("RX MODE");
   }
 }
 
@@ -66,9 +72,13 @@ void lora_serial_read() {
     str += i;
     str += "\n";
     oled_status(str);
+    LoRa.setFrequency(frequency);
+    LoRa.setSpreadingFactor(spreadingFactor);
+    LoRa.setSignalBandwidth(signalBandwidth);
     LoRa.beginPacket();
     LoRa.write(buffer, i);
     LoRa.endPacket();
+    loraMillis = millis();
   }
 }
 
@@ -85,10 +95,13 @@ void lora_send() {
       str += buffer.length();
       str += "\n";
       oled_status(str);
-
+      LoRa.setFrequency(frequency);
+      LoRa.setSpreadingFactor(spreadingFactor);
+      LoRa.setSignalBandwidth(signalBandwidth);
       LoRa.beginPacket();
       LoRa.print(buffer);
       LoRa.endPacket();
+      loraMillis = millis();
     }
   }
 }
@@ -103,6 +116,9 @@ void LoRa_txMode() {
 }
 
 void onReceive(int size) {
+
+  loraMillis = millis();
+  
   String str = "";
   str += "Rssi: ";
   str += LoRa.packetRssi();
